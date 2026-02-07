@@ -58,8 +58,13 @@ REGLAS DE COMPORTAMIENTO:
 const chatHistory = {};
 
 client.on('qr', (qr) => {
+    // Esto imprime el dibujo (que a veces falla)
     qrcode.generate(qr, { small: true });
-    console.log('⚡ ESCANEA EL QR AHORA ⚡');
+    
+    // ESTO ES LO NUEVO: Imprime el código de texto para que lo copies
+    console.log('\n⚡ SI EL DIBUJO NO FUNCIONA, COPIA TODO EL TEXTO DE ABAJO Y PÉGALO EN UN GENERADOR DE QR:');
+    console.log(qr); 
+    console.log('⚡ FIN DEL CÓDIGO ⚡\n');
 });
 
 client.on('ready', () => {
