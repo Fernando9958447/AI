@@ -3,95 +3,67 @@ const qrcode = require('qrcode-terminal');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
 
-// --- 1. CONFIGURACIÓN Y SEGURIDAD ---
-// Verificamos que la llave exista antes de empezar para evitar crashes feos.
+// --- 1. SEGURIDAD ---
 if (!process.env.GEMINI_API_KEY) {
-    console.error("❌ ERROR FATAL: No has puesto la variable GEMINI_API_KEY en Railway.");
-    console.error("⚠️ El bot arrancará pero no podrá responder inteligentemente.");
+    console.error("❌ ERROR FATAL: Falta la variable GEMINI_API_KEY en Railway.");
 }
 
 // Inicialización de Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "NO_API_KEY");
 
-// --- 2. LA PERSONALIDAD DE SOFÍA (SYSTEM PROMPT) ---
-// Aquí definimos las reglas de oro. La IA nunca pedirá dinero directamente.
-const SYSTEM_INSTRUCTION = `
-Eres "Sofía", la Asesora de Ventas Estrella de "Renova Flux".
-Tu misión: Atender con amabilidad, resolver dudas, ofrecer promociones y CALMAR al cliente si está molesto.
-Tu límite: NO cobras ni das números de cuenta. Cuando el cliente diga "Quiero comprar", "Yape", "Cuenta" o "Pago", tú pasas la posta al humano.
+// 🔥 CAMBIO CLAVE: Usamos 'gemini-2.0-flash' que es RÁPIDO y tiene LÍMITES ALTOS.
+// Si por alguna razón fallara, puedes probar 'gemini-1.5-flash-latest'
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-TONO DE VOZ:
-- Amable, empático, energético. Usas emojis (✨, 🚛, 🎁, 💎).
-- Tratas al cliente de "mi estimada/o", "campeona/on", "amiga/o".
+// --- 2. PERSONALIDAD DE SOFÍA (Prompt Maestro) ---
+const SOFIA_PROMPT = `
+INSTRUCCIONES MAESTRAS PARA SOFÍA (Renova Flux):
+Tu objetivo es vender "Renöva+" (Colágeno Premium) con amabilidad y energía.
 
-INFORMACIÓN DEL PRODUCTO (Renöva+):
-- Trilogía de Juventud: Colágeno + Resveratrol + Q10 + Magnesio.
-- Origen: Laboratorio Peptan (Francia). 100% Original con Registro DIGESA.
-- Beneficios: Piel firme, cabello fuerte, regenera cartílagos (dolor rodilla).
+PRODUCTO:
+- Renöva+ (Trilogía de Juventud): Colágeno + Resveratrol + Q10 + Magnesio + Biotina.
+- Laboratorio: Peptan (Francia). 100% Original con Reg. DIGESA.
+- Beneficios: Piel firme, adiós caída de cabello, regenera rodillas/articulaciones.
 
-PRECIOS Y OFERTAS (Solo informa, no cobra):
-- Consumo Personal:
-    * 1 Unidad: S/ 110 (Antes S/ 170).
-    * Pack x3: S/ 300 (Sale a S/ 100 c/u) -> *Recomendado*.
-    * REGALO: Pack x3 incluye 1 Tomatodo GRATIS.
-- Negocio/Mayorista:
-    * Pack Emprendedor (7 Unidades): S/ 95 c/u.
-    * Precio S/ 85: Solo para cajas de 30 a 50 unidades.
+PRECIOS Y OFERTAS (Respeta esto estrictamente):
+1. CONSUMO PERSONAL:
+   - 1 Unidad: S/ 110.
+   - Pack x3: S/ 300 (Ahorro total, sale a S/ 100 c/u). *RECOMENDADO*.
+   - REGALO: Pack x3 incluye 1 Tomatodo GRATIS.
+2. NEGOCIO:
+   - Pack Emprendedor (7 Unidades): S/ 95 c/u (Total S/ 665).
+   - Mayorista (30+ u): S/ 85 c/u.
 
-REGLAS DE COMPORTAMIENTO (STRICT MODE):
-1. SI PREGUNTAN PRECIO: No des el número solo. Pregunta: "¿Es para consumo personal o negocio?".
-2. SI PREGUNTAN ORIGINALIDAD: Explica los sellos (Plateado, Digesa) con seguridad.
-3. SI EL CLIENTE QUIERE PAGAR ("Quiero el de 300", "Pásame el Yape", "Cómo pago"):
-   - NO des el número de Yape.
-   - RESPONDE EXACTAMENTE: "[HUMANO_PAGO]"
-4. SI EL CLIENTE PIDE FOTO/VIDEO REAL O ENVÍA COMPROBANTE:
-   - RESPONDE EXACTAMENTE: "[HUMANO_MULTIMEDIA]"
-5. SI EL CLIENTE SE QUEJA O ES UN TEMA DIFÍCIL (Reclamo, Envío demorado):
-   - Justifica suavemente ("Entiendo tu molestia, a veces la ruta se complica...") y luego...
-   - RESPONDE EXACTAMENTE: "[HUMANO_SOPORTE]"
+REGLAS DE SEGURIDAD (OBLIGATORIAS):
+- SI PIDEN PRECIO: Pregunta primero "¿Consumo o Negocio?".
+- SI QUIEREN PAGAR ("Yape", "Cuenta", "Quiero"): Responde SOLO: "[HUMANO_PAGO]".
+- SI PIDEN FOTO/VIDEO: Responde SOLO: "[HUMANO_MULTIMEDIA]".
+- SI HAY QUEJAS: Responde SOLO: "[HUMANO_SOPORTE]".
+- ENVÍOS: Lima (Contraentrega). Provincia (Adelanto S/ 30 a Jose Olaya, saldo en agencia).
 
-Tus respuestas deben ser cortas (máx 3 párrafos) y siempre terminar invitando a seguir hablando.
+TONO: Amable, usa emojis (✨, 🚛, 🎁), respuestas cortas y persuasivas.
 `;
 
-// Configuración del modelo con la instrucción de sistema
-const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
-    systemInstruction: SYSTEM_INSTRUCTION
-});
-
-// --- 3. CLIENTE DE WHATSAPP ---
+// --- 3. WHATSAPP ---
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process', 
-            '--disable-gpu'
-        ]
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-accelerated-2d-canvas', '--no-first-run', '--no-zygote', '--single-process', '--disable-gpu']
     }
 });
 
-// Historial de conversación (Memoria a corto plazo)
 const chatHistory = {};
 
 client.on('qr', (qr) => {
-    // Opción A: Dibujo (a veces falla en Railway)
-    qrcode.generate(qr, { small: true });
-    
-    // Opción B: Texto para copiar (Infalible)
-    console.log('\n⚡ SI EL DIBUJO NO FUNCIONA, COPIA EL TEXTO DE ABAJO Y ÚSALO EN UN GENERADOR QR:');
+    // Genera el texto para copiar si el dibujo falla
+    console.log('\n⚡ COPIA EL CÓDIGO DE ABAJO Y PÉGALO EN UN GENERADOR QR:');
     console.log(qr); 
-    console.log('⚡ FIN DEL CÓDIGO ⚡\n');
+    console.log('⚡ FIN DEL CÓDIGO QR ⚡\n');
 });
 
 client.on('ready', () => {
-    console.log('✅ SOFÍA 10.0 ESTÁ LISTA. (Modo: Asistente - No Pagos)');
+    console.log('✅ SOFÍA 10.0 LISTA (Motor: Gemini 2.0 Flash - Alta Velocidad ⚡)');
 });
 
 client.on('message', async msg => {
@@ -101,29 +73,32 @@ client.on('message', async msg => {
     const userName = contact.pushname || "Amiga/o";
     const text = msg.body;
 
-    // --- FILTRO DE MEDIOS ---
-    // Si envían fotos/audios, la IA no los procesa, llama al humano.
-    if (msg.hasMedia) {
-        await chat.sendMessage(`✅ Recibido. Voy a avisarle a **Jose Olaya** para que revise tu archivo personalmente. Dame unos minutos. 👨‍💻`);
-        return;
-    }
+    if (msg.hasMedia) return; // Ignoramos fotos/audios para no gastar IA
 
-    // Inicializar historial si es nuevo usuario
+    // --- INYECCIÓN DE PERSONALIDAD (MÉTODO INFALIBLE) ---
+    // Esto funciona en CUALQUIER modelo de Gemini porque va en el historial, no en la config.
     if (!chatHistory[userId]) {
         chatHistory[userId] = [
-            { role: "user", parts: [{ text: "Hola" }] },
-            { role: "model", parts: [{ text: `Hola ${userName}, soy Sofía de Renova Flux. ¿Buscas el colágeno para consumo personal o negocio?` }] }
+            { 
+                role: "user", 
+                parts: [{ text: `Hola, actúa como Sofía siguiendo estas reglas estrictas:\n${SOFIA_PROMPT}` }] 
+            },
+            { 
+                role: "model", 
+                parts: [{ text: `¡Entendido! Soy Sofía de Renova Flux. Estoy lista para vender con esas reglas. ✨` }] 
+            }
         ];
     }
 
-    // Añadir mensaje actual al historial
+    // Historial corto (últimos 8 mensajes) para ahorrar tokens y mantener contexto fresco
     chatHistory[userId].push({ role: "user", parts: [{ text: text }] });
-
-    // Limitar memoria (últimos 10 mensajes)
-    if (chatHistory[userId].length > 20) chatHistory[userId] = chatHistory[userId].slice(-10);
+    if (chatHistory[userId].length > 10) {
+        const prompt = chatHistory[userId].slice(0, 2); // Mantenemos las instrucciones
+        const recent = chatHistory[userId].slice(-6);   // Mantenemos lo reciente
+        chatHistory[userId] = [...prompt, ...recent];
+    }
 
     try {
-        // --- CEREBRO GEMINI ---
         const chatSession = model.startChat({
             history: chatHistory[userId]
         });
@@ -131,37 +106,27 @@ client.on('message', async msg => {
         const result = await chatSession.sendMessage(text);
         const responseText = result.response.text();
 
-        // --- DETECTORES DE INTERVENCIÓN HUMANA ---
-        
+        // --- FILTROS DE HUMANO ---
         if (responseText.includes("[HUMANO_PAGO]")) {
-            await chat.sendMessage(`¡Excelente decisión ${userName}! 🎉
-Para gestionar tu pago y envío con total seguridad, le paso el dato a **Jose Olaya** ahora mismo.
-Él te dará la cuenta oficial y tomará tus datos de envío. ¡No te vayas! 😉`);
+            await chat.sendMessage(`¡Excelente decisión ${userName}! 🎉\nPara gestionar tu pago y envío seguro, le paso el dato a **Jose Olaya** ahora mismo. Él te dará la cuenta oficial. ¡No te vayas! 😉`);
             return;
         }
-
         if (responseText.includes("[HUMANO_MULTIMEDIA]")) {
-            await chat.sendMessage(`¡Claro que sí! 📸
-Déjame pedirle a **Jose** que te envíe el video/foto real desde almacén ahora mismo para que lo veas en vivo.`);
+            await chat.sendMessage(`¡Claro! 📸\nDéjame pedirle a **Jose** que te envíe el video real desde almacén para que veas los sellos.`);
             return;
         }
-
         if (responseText.includes("[HUMANO_SOPORTE]")) {
-            await chat.sendMessage(`Entiendo perfectamente. 🙏
-Para resolver esto rápido y darte una solución concreta, voy a conectar con un **Supervisor Humano**. Dame un momento por favor.`);
+            await chat.sendMessage(`Entiendo. 🙏\nPara solucionarlo rápido, voy a conectar con un **Supervisor Humano**. Dame un momento.`);
             return;
         }
 
-        // Si no hay intervención, enviamos la respuesta de Sofía
         await chat.sendMessage(responseText);
-
-        // Guardamos la respuesta en memoria
         chatHistory[userId].push({ role: "model", parts: [{ text: responseText }] });
 
     } catch (error) {
-        console.error("Error con Gemini:", error);
-        // Fallback silencioso: Si la IA falla, no decimos nada raro, solo pedimos repetir.
-        // Opcional: Podrías poner un mensaje de "Espera un momento".
+        console.error("Error Gemini:", error);
+        // Si falla 2.0, intentamos responder genérico para no dejar en visto
+        await chat.sendMessage("¡Hola! Tuve un pequeño parpadeo de señal 📶. ¿Me lo repites?");
     }
 });
 
