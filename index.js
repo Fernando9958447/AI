@@ -12,7 +12,7 @@ if (!process.env.GEMINI_API_KEY) {
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-// --- 2. CEREBRO MAESTRO (Sofía 16.0 - Profesional y Directa) ---
+// --- 2. CEREBRO MAESTRO (Sofía 17.0 - La Versión Completa) ---
 const SOFIA_PROMPT = `
 ERES: "Sofía", Asesora Comercial de "Renova Flux".
 PERSONALIDAD: Profesional, Amable, Persuasiva, pero CONCISA.
@@ -23,7 +23,7 @@ OBJETIVO: Obtener el nombre del cliente, explicar "La Pócima" simple y cerrar v
 - NO uses "Campeón", "Líder" o "Amiga" en cada frase. Es molesto. Usa su nombre si lo tienes. Si no, sé neutral y respetuosa.
 
 🔥 EL PRODUCTO: "Renöva+" (La Pócima de la Eterna Juventud).
-- Fórmula: Colágeno Peptan (Francia) + Resveratrol + Q10 + Magnesio.
+- Fórmula: Colágeno Peptan (Francia) + Resveratrol + Q10 + Magnesio + Zinc.
 - Seguridad: 100% Original (Digesa).
 
 🧠 CÓMO EXPLICAR (SOLO SI PIDEN "INFO" O "BENEFICIOS"):
@@ -51,7 +51,7 @@ LOGÍSTICA:
 - Lima: Contraentrega.
 - Provincia: Adelanto S/ 30 a La Jefa, saldo en agencia.
 
-TONO: Breve. Usa emojis: ✨, 🚀, 💎, 🍷.
+TONO: Breve. Usa emojis: ✨, 🚀, 💎, 🍷. Despídete siempre deseando un "Gran día".
 `;
 
 const client = new Client({
@@ -62,19 +62,24 @@ const client = new Client({
     }
 });
 
-// --- GESTIÓN DE MEMORIA Y ANTI-REPETICIÓN ---
+// --- GESTIÓN DE MEMORIA ---
 const chatHistory = {};
 const humanModeUsers = new Set();
-// Set para guardar IDs de mensajes y no responder doble
-const processedMessages = new Set();
+const processedMessages = new Set(); // Filtro anti-spam
 
+// --- AQUI ESTA LO QUE PEDISTE: EL TEXTO DEL QR ---
 client.on('qr', (qr) => {
+    // 1. Dibuja el QR (a veces falla en Railway)
     qrcode.generate(qr, { small: true });
-    console.log('\n⚡ QR LISTO PARA ESCANEAR ⚡\n');
+    
+    // 2. IMPRIME EL TEXTO (Esto es lo que necesitas copiar)
+    console.log('\n⚡ SI EL DIBUJO FALLA, COPIA TODO EL TEXTO DE ABAJO Y PÉGALO EN UN GENERADOR QR:');
+    console.log(qr); 
+    console.log('⚡ FIN DEL CÓDIGO QR ⚡\n');
 });
 
 client.on('ready', () => {
-    console.log('✅ SOFÍA 16.0 LISTA (Sin repeticiones - Sin sentimentalismo)');
+    console.log('✅ SOFÍA 17.0 LISTA (QR Texto + Sin Repeticiones + Modo Silencio)');
 });
 
 client.on('message', async msg => {
@@ -83,7 +88,7 @@ client.on('message', async msg => {
     if (processedMessages.has(msg.id.id)) return; // Si ya procesé este ID, ignoro.
     processedMessages.add(msg.id.id);
 
-    // Limpieza de memoria del filtro (para que no crezca infinito)
+    // Limpieza de memoria del filtro
     if (processedMessages.size > 1000) processedMessages.clear();
 
     const chat = await msg.getChat();
@@ -91,9 +96,10 @@ client.on('message', async msg => {
     const text = msg.body;
 
     // 2. FILTRO DE SILENCIO (HUMANO)
+    // Si ya te pasé con La Jefa, no vuelvo a hablar.
     if (humanModeUsers.has(userId)) return;
 
-    // 3. FILTRO MULTIMEDIA (Ahorro de recursos)
+    // 3. FILTRO MULTIMEDIA
     if (msg.hasMedia) return;
 
     // 4. INYECCIÓN DE CEREBRO
@@ -105,14 +111,14 @@ client.on('message', async msg => {
             },
             { 
                 role: "model", 
-                parts: [{ text: `Entendido. Soy Sofía. Preguntaré el nombre, seré breve y no repetiré textos. 🚀` }] 
+                parts: [{ text: `Entendido. Soy Sofía. Preguntaré el nombre, usaré analogías y me apagaré al vender. 🚀` }] 
             }
         ];
     }
 
     chatHistory[userId].push({ role: "user", parts: [{ text: text }] });
 
-    // Memoria corta (Prompt + Últimos 6 mensajes para que sea ligera)
+    // Memoria corta (Prompt + Últimos 6 mensajes)
     if (chatHistory[userId].length > 10) {
         const prompt = chatHistory[userId].slice(0, 2);
         const recent = chatHistory[userId].slice(-6);
@@ -127,10 +133,10 @@ client.on('message', async msg => {
         const result = await chatSession.sendMessage(text);
         const responseText = result.response.text();
 
-        // --- SISTEMA DE DERIVACIÓN ---
+        // --- SISTEMA DE DERIVACIÓN (CIERRE) ---
 
         if (responseText.includes("[HUMANO_PAGO]")) {
-            await chat.sendMessage(`¡Excelente decisión! 🎉\nPara cerrar tu pedido con seguridad, te paso con **Mi Jefa** ahora mismo. Ella te dará la cuenta oficial y coordinará el envío.\n\n*Muchas gracias por confiar en Renova Flux.* ✨`);
+            await chat.sendMessage(`¡Excelente decisión! 🎉\nPara cerrar tu pedido con seguridad, te paso con **Mi Jefa** ahora mismo. Ella te dará la cuenta oficial y coordinará el envío.\n\n*Muchas gracias por confiar en Renova Flux. ¡Que tengas un gran día!* ✨`);
             humanModeUsers.add(userId);
             return;
         }
