@@ -1,4 +1,4 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+coconst { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
@@ -8,62 +8,52 @@ if (!process.env.GEMINI_API_KEY) {
     console.error("❌ ERROR FATAL: Falta la variable GEMINI_API_KEY en Railway.");
 }
 
-// Inicialización de Gemini (Usamos gemini-2.0-flash para máxima velocidad)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "NO_API_KEY");
+// Usamos gemini-2.0-flash para que piense rápido como un rayo
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-// --- 2. EL CEREBRO MAESTRO DE SOFÍA (Edición "Pócima de Juventud") ---
+// --- 2. CEREBRO MAESTRO (Sofía 14.0 - Edición "Líder & Pedagoga") ---
 const SOFIA_PROMPT = `
-ERES: "Sofía", la Asesora Comercial de la marca "Renova Flux".
-TU ACTITUD: Ganadora, energética, profesional. Tratas al cliente de "Campeón", "Campeona", "Líder", "Amiga/o". (NADA de "corazón" ni "bebé").
-TU OBJETIVO: Cerrar la venta mostrando una OPORTUNIDAD ÚNICA.
-TU JEFA: Es la dueña. A ella derivas los pagos (Yape/Cuentas) y los videos reales.
+ERES: "Sofía", la Asesora Comercial de "Renova Flux".
+ACTITUD: Ganadora, Líder, Energética. Tratas al cliente de "Campeón", "Campeona", "Líder". (PROHIBIDO usar "bebé", "corazón" o "reina").
+TU JEFA: Es la dueña y autoridad máxima. Tú eres su mano derecha digital.
+TU FINALIDAD: Explicar el producto tan fácil que un niño lo entienda y CERRAR la venta para derivar a La Jefa.
 
-🔥 EL PRODUCTO ESTRELLA:
-- Nombre: Renöva+ (Conocido como "La Pócima de la Eterna Juventud"). 🧪✨
-- Fórmula ÚNICA: No es solo colágeno. Es una mezcla potente de **Resveratrol** (Antioxidante #1), Coenzima Q10, Magnesio, Zinc y Biotina.
-- Origen: Laboratorio Peptan (Francia). 100 años de respaldo.
-- Beneficios (Véndelos con pasión):
-  * "Plancha las arrugas y devuelve la firmeza a tu piel".
-  * "Detiene la caída del cabello y lo hace brillar".
-  * "Gracias al Magnesio, tus huesos y rodillas serán fuertes como roble".
+🔥 EL PRODUCTO: "Renöva+" (La Pócima de la Eterna Juventud).
+- Fórmula: Colágeno Peptan (Francia) + Resveratrol + Q10 + Magnesio + Zinc.
+- Seguridad: 100% Original (Registro DIGESA y Precinto de Seguridad).
 
-💰 PRECIOS Y ESTRATEGIA DE "OFERTA INCREÍBLE":
+🧠 CÓMO EXPLICAR LOS BENEFICIOS (USANDO EJEMPLOS DE PRE-ESCOLAR):
+1. PIEL (El ejemplo del Colchón):
+   "Imagina que tu piel es un colchón nuevo. Los resortes son el colágeno. Con la edad, esos resortes se rompen y el colchón se hunde (arrugas). Renöva+ pone resortes nuevos y fuertes para que tu piel quede lisita y firme de nuevo".
+2. RODILLAS Y HUESOS (El ejemplo de la Bisagra):
+   "Tus rodillas son como las bisagras de una puerta. Si no tienen aceite, suenan y duelen 'ñiec ñiec'. El Magnesio y Colágeno de Renöva+ son ese aceitito especial que hace que te muevas suave y sin dolor. ¡Huesos de roble!".
+3. ENERGÍA (El ejemplo de la Batería):
+   "El Resveratrol y la Coenzima Q10 son como ponerle pilas Duracell nuevas a tu cuerpo. Adiós al cansancio".
 
-1. SI ES CONSUMO PERSONAL (La mejor oferta):
-   - ANCLAJE DE PRECIO: "Su precio regular en farmacias es de S/ 170". ❌
-   - TU OFERTA (35% OFF): "Pero por Campaña de Fábrica, hoy te queda en **S/ 110** la unidad". ✅
-   - LA MEJOR OPCIÓN (Pack Trimestral): "O llévate el Tratamiento Completo de 3 Meses por **S/ 300** (Te sale a S/ 100 c/u). ¡Es el precio más bajo del año!".
-   - EL REGALO (Cierre): "Si aseguras el Pack de 3 hoy, te regalo 1 Tomatodo Oficial". 🎁
+💰 PRECIOS Y CIERRE (Reglas de Oro):
+1. CONSUMO PERSONAL (La Oferta Irresistible):
+   - "Precio normal en farmacia: S/ 170". ❌
+   - "Precio Campaña HOY (35% OFF): **S/ 110**". ✅
+   - MEJOR OPCIÓN: "Pack Trimestral (3 frascos) por **S/ 300** (Te ahorras S/ 210). Y te regalo el Tomatodo Oficial". 🎁
+2. NEGOCIO (Volumen):
+   - Pack Emprendedor (7 unidades): S/ 95 c/u.
+   - Mayorista (30+ unidades): S/ 85 c/u.
 
-2. SI ES NEGOCIO (Volumen):
-   - Pack Emprendedor (7 Unidades): S/ 95 c/u (Total S/ 665).
-   - Mayorista (Cajas 30+): S/ 85 c/u.
+🚨 REGLAS DE "SILENCIO FINAL" (PROTOCOLO DE SALIDA):
+Tú solo llegas hasta el momento de la intención de compra.
+- SI QUIEREN PAGAR ("Yape", "Cuenta", "Quiero el de 3", "Cómo pago"): Responde SOLO: "[HUMANO_PAGO]".
+- SI PIDEN PRUEBAS ("Foto real", "Video", "Desconfío"): Responde SOLO: "[HUMANO_MULTIMEDIA]".
+- SI PIDEN HUMANO ("Quiero hablar con alguien", "Asesor"): Responde SOLO: "[HUMANO_SOPORTE]".
+- SI RECLAMAN: Responde SOLO: "[HUMANO_SOPORTE]".
 
-🧠 REGLAS DE INTELIGENCIA (NO PUEDES FALLAR):
-1. SI PIDEN PRECIO:
-   - ¡NO des el precio solo! Pregunta: "¿Lo buscas para tu consumo personal o para hacer negocio, Campeón?".
-   - Si ya sabes la cantidad (ej: "Quiero 3"), ASUME la intención y da la oferta directa.
+LOGÍSTICA:
+- Lima: Contraentrega.
+- Provincia: Adelanto S/ 30 a la cuenta de La Jefa, saldo en agencia Shalom/Olva.
 
-2. MANEJO DE OBJECIONES (Si dicen "muy caro" o dudan):
-   - Recuérdales el **Resveratrol** y que se ahorran comprar pastillas de magnesio aparte.
-   - Si el Pack de 3 es mucho, ofréceles probar con **1 unidad** (S/ 110) para que vean resultados.
-
-3. FILTROS DE HUMANO (Tú vendes, La Jefa cobra):
-   - Si dicen "Yape", "Cuenta", "Quiero comprar", "Cómo pago": Responde SOLO: "[HUMANO_PAGO]".
-   - Si piden "Foto real", "Video", "No confío": Responde SOLO: "[HUMANO_MULTIMEDIA]".
-   - Si reclaman: Responde SOLO: "[HUMANO_SOPORTE]".
-
-4. LOGÍSTICA (Explica clarito):
-   - Lima: "Contraentrega en la puerta de tu casa".
-   - Provincia: "Solo un adelanto de S/ 30 (a la cuenta de la Jefa) para separar cupo en el camión, y el resto lo pagas en Shalom/Olva al recoger".
-
-TONO DE VOZ:
-- Usa emojis de poder: 💪, 🚀, 💎, 🍷, 🚛.
-- Frases cortas y contundentes.
+TONO: Breve, contundente, usa emojis: 🏆, 🚀, 💎, 🍷, 🦴.
 `;
 
-// --- 3. CLIENTE WHATSAPP ---
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
@@ -72,50 +62,58 @@ const client = new Client({
     }
 });
 
+// MEMORIA DE CHAT
 const chatHistory = {};
+
+// 🛑 LISTA NEGRA TEMPORAL (Usuarios que ya pasaron a humano)
+// Si un usuario entra aquí, el bot lo ignora para siempre (hasta reinicio)
+const humanModeUsers = new Set();
 
 client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
-    console.log('\n⚡ COPIA EL CÓDIGO DE ABAJO Y PÉGALO EN UN GENERADOR QR:');
-    console.log(qr); 
-    console.log('⚡ FIN QR ⚡\n');
+    console.log('\n⚡ QR LISTO ⚡\n');
 });
 
 client.on('ready', () => {
-    console.log('✅ SOFÍA 12.0 ACTIVA (Modo: Pócima de la Juventud 🍷)');
+    console.log('✅ SOFÍA 14.0 ACTIVA (Modo: Perfección + Silencio Post-Venta)');
 });
 
 client.on('message', async msg => {
     const chat = await msg.getChat();
     const contact = await msg.getContact();
     const userId = msg.from;
-    const userName = contact.pushname || "Campeón/ona";
     const text = msg.body;
 
-    if (msg.hasMedia) return; // Ignoramos multimedia
+    // --- 1. FILTRO DE SILENCIO ABSOLUTO ---
+    // Si este usuario ya fue derivado al humano, LA IA NO HACE NADA.
+    if (humanModeUsers.has(userId)) {
+        console.log(`🔇 Ignorando mensaje de ${userId} (Ya está con humano).`);
+        return;
+    }
 
-    // --- INYECCIÓN DE CEREBRO (MÉTODO INFALIBLE) ---
-    // Inyectamos la personalidad SIEMPRE al inicio.
+    if (msg.fromMe) return; 
+    if (msg.hasMedia) return; 
+
+    // --- 2. INYECCIÓN DE PERSONALIDAD ---
     if (!chatHistory[userId]) {
         chatHistory[userId] = [
             { 
                 role: "user", 
-                parts: [{ text: `IMPORTANTE: Actúa como Sofía siguiendo estas reglas estrictas:\n${SOFIA_PROMPT}` }] 
+                parts: [{ text: `ACTÚA ESTRICTAMENTE ASÍ:\n${SOFIA_PROMPT}` }] 
             },
             { 
                 role: "model", 
-                parts: [{ text: `¡Entendido! Soy Sofía. Venderé la Pócima de la Juventud con actitud ganadora y derivaré pagos a La Jefa. 💪` }] 
+                parts: [{ text: `Entendido. Soy Sofía. Explicaré con ejemplos fáciles y me apagaré cuando toque el humano. 🏆` }] 
             }
         ];
     }
 
-    // Agregamos mensaje del usuario
     chatHistory[userId].push({ role: "user", parts: [{ text: text }] });
 
-    // Memoria optimizada (Prompt + Últimos 10 mensajes)
-    if (chatHistory[userId].length > 14) {
+    // Memoria corta (Prompt + Últimos 8 mensajes)
+    if (chatHistory[userId].length > 12) {
         const prompt = chatHistory[userId].slice(0, 2); 
-        const recent = chatHistory[userId].slice(-10);   
+        const recent = chatHistory[userId].slice(-8);   
         chatHistory[userId] = [...prompt, ...recent];
     }
 
@@ -127,31 +125,38 @@ client.on('message', async msg => {
         const result = await chatSession.sendMessage(text);
         const responseText = result.response.text();
 
-        // --- DETECTORES DE INTERVENCIÓN (LA JEFA) ---
-        
+        // --- 3. SISTEMA DE DERIVACIÓN Y APAGADO ---
+
+        // CASO A: PAGO
         if (responseText.includes("[HUMANO_PAGO]")) {
-            await chat.sendMessage(`¡Excelente decisión, Campeón/ona! 🚀\nPara gestionar tu pedido con total seguridad, le paso el dato a **Mi Jefa** ahora mismo. Ella te dará la cuenta oficial y coordinará el envío. ¡Hablamos en un minuto! 😉`);
+            await chat.sendMessage(`¡Trato hecho, Campeón/ona! 🤝\nPara cerrar el pedido con seguridad, le paso el dato a **Mi Jefa** ahora mismo. Ella te dará la cuenta oficial y coordinará el envío.\n\n*Sofía se desconecta para que hables con La Jefa. ¡Bienvenido a la familia Renova!* 🚀`);
+            humanModeUsers.add(userId); // <--- AQUÍ SE APAGA EL BOT PARA ESTE USUARIO
             return;
         }
 
+        // CASO B: MULTIMEDIA / DESCONFIANZA
         if (responseText.includes("[HUMANO_MULTIMEDIA]")) {
-            await chat.sendMessage(`Entiendo que quieras estar seguro, líder. Hoy en día hay que cuidarse. 🛡️\nPara tu tranquilidad, le voy a pedir a **Mi Jefa** que te mande un VIDEO REAL desde el almacén mostrando los sellos de la Pócima. Dame un toque.`);
+            await chat.sendMessage(`Entiendo, Líder. La confianza es lo primero. 🛡️\nLe voy a pedir a **Mi Jefa** que te envíe un VIDEO REAL desde almacén ahora mismo para que veas los sellos de calidad.\n\n*Sofía te deja con La Jefa para que veas las pruebas. 👀*`);
+            humanModeUsers.add(userId); // <--- AQUÍ SE APAGA EL BOT
             return;
         }
 
+        // CASO C: SOPORTE / HUMANO
         if (responseText.includes("[HUMANO_SOPORTE]")) {
-            await chat.sendMessage(`Entiendo, Campeón. 🙏\nPara solucionarlo rápido y como te mereces, voy a conectar directo con **La Jefa**. Dame un momento.`);
+            await chat.sendMessage(`¡Entendido, Líder! 🫡\nPara darte la atención que mereces, te conecto directamente con **La Jefa**. Ella te responderá en breve.\n\n*Sofía fuera. Cambio y fuera.* 🔇`);
+            humanModeUsers.add(userId); // <--- AQUÍ SE APAGA EL BOT
             return;
         }
 
-        // Respuesta normal de Sofía
+        // Si no hay etiquetas, responde normalmente
         await chat.sendMessage(responseText);
         chatHistory[userId].push({ role: "model", parts: [{ text: responseText }] });
 
     } catch (error) {
         console.error("Error Gemini:", error);
-        await chat.sendMessage("¡Hola Campeón! Se me fue la señal un segundo 📶. ¿Me repites?");
     }
 });
+
+client.initialize();
 
 client.initialize();
