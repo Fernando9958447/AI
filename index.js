@@ -3,54 +3,55 @@ const qrcode = require('qrcode-terminal');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
 
-// --- 1. SEGURIDAD Y CONFIGURACIÓN ---
+// --- 1. SEGURIDAD ---
 if (!process.env.GEMINI_API_KEY) {
     console.error("❌ ERROR FATAL: Falta la variable GEMINI_API_KEY en Railway.");
     process.exit(1);
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// Usamos gemini-2.0-flash para velocidad y capacidad de razonamiento
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-// --- 2. CEREBRO MAESTRO (PERSONALIDAD EXTREMA) ---
+// --- 2. CEREBRO MAESTRO (Sofía 16.0 - Profesional y Directa) ---
 const SOFIA_PROMPT = `
-ERES: "Sofía", la Asesora Comercial Estrella de "Renova Flux".
-ACTITUD: Ganadora, Líder, Energética pero muy humana.
-TRATO: Usas "Campeón", "Campeona", "Líder". (JAMÁS uses "bebé", "corazón" o "reina").
-TU JEFA: Es la dueña y máxima autoridad. Tú eres su asistente digital.
-MISIÓN: Explicar el producto con analogías simples (para niños), cerrar la venta y DERIVAR A LA JEFA.
+ERES: "Sofía", Asesora Comercial de "Renova Flux".
+PERSONALIDAD: Profesional, Amable, Persuasiva, pero CONCISA.
+OBJETIVO: Obtener el nombre del cliente, explicar "La Pócima" simple y cerrar venta.
+
+🚨 REGLA DE ORO (EL NOMBRE):
+- En tu PRIMER mensaje, saluda y PREGUNTA SU NOMBRE amablemente.
+- NO uses "Campeón", "Líder" o "Amiga" en cada frase. Es molesto. Usa su nombre si lo tienes. Si no, sé neutral y respetuosa.
 
 🔥 EL PRODUCTO: "Renöva+" (La Pócima de la Eterna Juventud).
-- Fórmula: Colágeno Peptan (Francia) + Resveratrol + Q10 + Magnesio + Zinc.
-- Seguridad: 100% Original (Registro DIGESA y Precinto Plateado).
+- Fórmula: Colágeno Peptan (Francia) + Resveratrol + Q10 + Magnesio.
+- Seguridad: 100% Original (Digesa).
 
-🧠 EXPLICACIÓN DE BENEFICIOS (Nivel Pre-escolar):
-1. PIEL (El Colchón): "Tu piel es como un colchón. El colágeno son los resortes. Con la edad se rompen y el colchón se hunde (arrugas). Renöva+ pone resortes nuevos para que quede firme y lisito".
-2. RODILLAS (La Bisagra): "Tus rodillas son bisagras. Sin aceite, suenan y duelen. Renöva+ es el aceite premium que las deja suaves y sin dolor. ¡Huesos de roble!".
-3. ENERGÍA (La Batería): "El Resveratrol es como ponerle pilas nuevas a tu cuerpo. Adiós cansancio".
+🧠 CÓMO EXPLICAR (SOLO SI PIDEN "INFO" O "BENEFICIOS"):
+No sueltes todo el texto de golpe. Usa estas analogías:
+1. PIEL: "Es como cambiar los resortes viejos de un colchón (arrugas) por nuevos (piel firme)".
+2. RODILLAS: "Es como ponerle aceite a una bisagra que suena. Adiós dolor".
+3. ENERGÍA: "Como ponerle pilas nuevas a tu cuerpo gracias al Resveratrol".
 
-💰 LISTA DE PRECIOS Y OFERTAS (Inquebrantables):
-1. CONSUMO PERSONAL (Estrategia de Anclaje):
-   - "Precio regular en farmacias: S/ 170". ❌
-   - "Precio Campaña HOY (35% OFF): **S/ 110** la unidad". ✅
-   - *LA JOYA DE la CORONA*: "Pack Trimestral (3 frascos) por **S/ 300**. (Ahorras S/ 210). + REGALO: 1 Tomatodo Oficial". 🎁
-2. NEGOCIO (Volumen):
-   - Pack Emprendedor (7 unidades): S/ 95 c/u.
-   - Mayorista (30+ unidades): S/ 85 c/u.
+💰 PRECIOS (SOLO SI PIDEN "PRECIO" O "COSTO"):
+1. CONSUMO PERSONAL:
+   - "Precio Regular: S/ 170" ❌.
+   - "Precio Campaña HOY (35% OFF): **S/ 110**". ✅
+   - MEJOR OPCIÓN: "Pack Trimestral (3 frascos) por **S/ 300** (Ahorras S/ 210) + Regalo Tomatodo". 🎁
+2. NEGOCIO (7+ Unidades):
+   - Pack Emprendedor (7 u): S/ 95 c/u.
+   - Mayorista (30+ u): S/ 85 c/u.
 
-🚨 PROTOCOLO DE SILENCIO (INTERVENCIÓN HUMANA):
-Tú llevas al cliente hasta la puerta, pero LA JEFA cobra.
-- SI QUIEREN PAGAR ("Yape", "Cuenta", "Quiero el de 3", "Cómo pago"): Responde SOLO: "[HUMANO_PAGO]".
-- SI PIDEN PRUEBAS ("Foto real", "Video", "Desconfío"): Responde SOLO: "[HUMANO_MULTIMEDIA]".
-- SI PIDEN HUMANO ("Quiero hablar con alguien", "Asesor"): Responde SOLO: "[HUMANO_SOPORTE]".
+🛑 PROTOCOLO DE SILENCIO (INTERVENCIÓN HUMANA):
+- SI QUIEREN PAGAR ("Yape", "Cuenta", "Quiero el de 3"): Responde SOLO: "[HUMANO_PAGO]".
+- SI PIDEN PRUEBAS ("Foto real", "Video", "No confío"): Responde SOLO: "[HUMANO_MULTIMEDIA]".
+- SI PIDEN HUMANO ("Asesor", "Persona"): Responde SOLO: "[HUMANO_SOPORTE]".
 - SI RECLAMAN: Responde SOLO: "[HUMANO_SOPORTE]".
 
 LOGÍSTICA:
-- Lima: Contraentrega en casa.
-- Provincia: Adelanto S/ 30 a la cuenta de La Jefa, saldo en agencia Shalom/Olva.
+- Lima: Contraentrega.
+- Provincia: Adelanto S/ 30 a La Jefa, saldo en agencia.
 
-TONO: Contundente, usa emojis: 🏆, 🚀, 💎, 🍷, 🦴. Despídete siempre deseando un "Gran día".
+TONO: Breve. Usa emojis: ✨, 🚀, 💎, 🍷.
 `;
 
 const client = new Client({
@@ -61,50 +62,41 @@ const client = new Client({
     }
 });
 
-// --- GESTIÓN DE MEMORIA Y ESTADO ---
+// --- GESTIÓN DE MEMORIA Y ANTI-REPETICIÓN ---
 const chatHistory = {};
-const humanModeUsers = new Set(); // Lista negra de usuarios que ya pasaron a humano
-const activeTimers = {}; // Para el modo sentimental (seguimiento)
+const humanModeUsers = new Set();
+// Set para guardar IDs de mensajes y no responder doble
+const processedMessages = new Set();
 
 client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
-    console.log('\n⚡ COPIA EL CÓDIGO DE ABAJO SI EL DIBUJO NO FUNCIONA:');
-    console.log(qr);
-    console.log('⚡ FIN QR ⚡\n');
+    console.log('\n⚡ QR LISTO PARA ESCANEAR ⚡\n');
 });
 
 client.on('ready', () => {
-    console.log('✅ SOFÍA 15.0 ACTIVA (Modo: Perfección + Sentimental)');
+    console.log('✅ SOFÍA 16.0 LISTA (Sin repeticiones - Sin sentimentalismo)');
 });
 
 client.on('message', async msg => {
-    // Evitar procesar mensajes propios o multimedia
+    // 1. FILTRO TÉCNICO: Evitar mensajes propios y DUPLICADOS
     if (msg.fromMe) return;
-    if (msg.hasMedia) return;
+    if (processedMessages.has(msg.id.id)) return; // Si ya procesé este ID, ignoro.
+    processedMessages.add(msg.id.id);
+
+    // Limpieza de memoria del filtro (para que no crezca infinito)
+    if (processedMessages.size > 1000) processedMessages.clear();
 
     const chat = await msg.getChat();
     const userId = msg.from;
     const text = msg.body;
 
-    // 1. FILTRO DE SILENCIO: Si ya está con La Jefa, Sofía no molesta MÁS.
-    if (humanModeUsers.has(userId)) {
-        return;
-    }
+    // 2. FILTRO DE SILENCIO (HUMANO)
+    if (humanModeUsers.has(userId)) return;
 
-    // 2. REINICIO DE TEMPORIZADOR SENTIMENTAL
-    // Si el cliente escribe, borramos el temporizador anterior
-    if (activeTimers[userId]) clearTimeout(activeTimers[userId]);
+    // 3. FILTRO MULTIMEDIA (Ahorro de recursos)
+    if (msg.hasMedia) return;
 
-    // Programamos uno nuevo: Si en 2 HORAS no responde, le escribimos.
-    activeTimers[userId] = setTimeout(async () => {
-        // Verificamos de nuevo que no esté en modo humano
-        if (humanModeUsers.has(userId)) return;
-
-        // Mensaje sentimental para recuperar la venta
-        await chat.sendMessage(`Hola Campeón/ona... 🥺 Me quedé pendiente de ti.\n\nNo quiero que pierdas la campaña del 35% de descuento de hoy. ¿Te separo el pedido o tienes alguna duda que pueda resolverte? 🚀`);
-    }, 2 * 60 * 60 * 1000); // 2 Horas en milisegundos
-
-    // 3. INYECCIÓN DE CEREBRO
+    // 4. INYECCIÓN DE CEREBRO
     if (!chatHistory[userId]) {
         chatHistory[userId] = [
             { 
@@ -113,17 +105,17 @@ client.on('message', async msg => {
             },
             { 
                 role: "model", 
-                parts: [{ text: `Entendido. Soy Sofía. Explicaré como a niños, venderé como líder y pasaré a La Jefa para cobrar. 🏆` }] 
+                parts: [{ text: `Entendido. Soy Sofía. Preguntaré el nombre, seré breve y no repetiré textos. 🚀` }] 
             }
         ];
     }
 
     chatHistory[userId].push({ role: "user", parts: [{ text: text }] });
 
-    // Mantener memoria limpia (Prompt + Últimos 10)
-    if (chatHistory[userId].length > 14) {
+    // Memoria corta (Prompt + Últimos 6 mensajes para que sea ligera)
+    if (chatHistory[userId].length > 10) {
         const prompt = chatHistory[userId].slice(0, 2);
-        const recent = chatHistory[userId].slice(-10);
+        const recent = chatHistory[userId].slice(-6);
         chatHistory[userId] = [...prompt, ...recent];
     }
 
@@ -135,30 +127,27 @@ client.on('message', async msg => {
         const result = await chatSession.sendMessage(text);
         const responseText = result.response.text();
 
-        // --- SISTEMA DE DERIVACIÓN (CIERRE DE VENTA) ---
+        // --- SISTEMA DE DERIVACIÓN ---
 
         if (responseText.includes("[HUMANO_PAGO]")) {
-            await chat.sendMessage(`¡Trato hecho, Campeón/ona! 🤝\nPara cerrar tu pedido con seguridad 🔐, te paso con **Mi Jefa** ahora mismo. Ella te dará la cuenta oficial BCP/Yape y coordinará el envío.\n\n*Que tengas un GRAN día. Sofía fuera.* 🚀`);
-            humanModeUsers.add(userId); // Apagamos el bot para este usuario
-            if (activeTimers[userId]) clearTimeout(activeTimers[userId]); // Cancelamos el sentimental
+            await chat.sendMessage(`¡Excelente decisión! 🎉\nPara cerrar tu pedido con seguridad, te paso con **Mi Jefa** ahora mismo. Ella te dará la cuenta oficial y coordinará el envío.\n\n*Muchas gracias por confiar en Renova Flux.* ✨`);
+            humanModeUsers.add(userId);
             return;
         }
 
         if (responseText.includes("[HUMANO_MULTIMEDIA]")) {
-            await chat.sendMessage(`Entiendo, Líder. La confianza se gana con hechos. 🛡️\nLe pido a **Mi Jefa** que te envíe un VIDEO REAL desde el almacén ahora mismo para que veas los sellos de calidad.\n\n*Te dejo con ella. ¡Un abrazo!*`);
+            await chat.sendMessage(`Entiendo, la confianza es clave. 🛡️\nLe pido a **Mi Jefa** que te envíe un VIDEO REAL desde el almacén ahora mismo para que veas los sellos de calidad.`);
             humanModeUsers.add(userId);
-            if (activeTimers[userId]) clearTimeout(activeTimers[userId]);
             return;
         }
 
         if (responseText.includes("[HUMANO_SOPORTE]")) {
-            await chat.sendMessage(`¡Entendido! 🫡\nPara darte la atención personalizada que mereces, te conecto directamente con **La Jefa**. Ella te responderá en breve.\n\n*Que tengas un excelente día.* ✨`);
+            await chat.sendMessage(`Comprendido. 🫡\nPara darte la atención personalizada que necesitas, te conecto directamente con **La Jefa**. Ella te responderá en breve.`);
             humanModeUsers.add(userId);
-            if (activeTimers[userId]) clearTimeout(activeTimers[userId]);
             return;
         }
 
-        // Si no hay etiquetas, Sofía responde y sigue vendiendo
+        // Respuesta normal
         await chat.sendMessage(responseText);
         chatHistory[userId].push({ role: "model", parts: [{ text: responseText }] });
 
